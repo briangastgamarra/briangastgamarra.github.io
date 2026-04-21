@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ente-Flug-Spiel</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #87CEEB;
+            padding: 24px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+        }
+
+        .main-area {
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        /* ── Game container: thin white border ── */
+        .game-container {
+            padding: 6px;
+            background: rgba(255, 255, 255, 0.96);
+            border: 0.7px solid rgba(31, 111, 235, 0.16);
+            border-radius: 20px;
+            box-shadow: 0 12px 36px rgba(0, 0, 0, 0.08);
+            line-height: 0; /* removes gap below canvas */
+        }
+
+        canvas {
+            width: 800px;
+            height: 600px;
+            border-radius: 15px;
+            display: block;
+            background: #87CEEB;
+        }
+
+        /* ── Info column ── */
+        .info-column {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            width: 230px;
+            flex-shrink: 0;
+        }
+
+        /* ── Legend ── */
+        .legend {
+            background: rgba(255, 255, 255, 0.96);
+            border: 0.7px solid rgba(31, 111, 235, 0.16);
+            border-radius: 18px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.07);
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .legend h3 {
+            margin: 0 0 4px 0;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #66788a;
+        }
+
+        .legend-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            padding: 9px 10px;
+            border-radius: 12px;
+            background: rgba(31, 111, 235, 0.05);
+        }
+
+        .legend-item-top {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-item-top .icon {
+            width: 26px;
+            height: 26px;
+            border-radius: 7px;
+            display: grid;
+            place-items: center;
+            font-size: 0.75rem;
+            color: #fff;
+            font-weight: 700;
+            flex-shrink: 0;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+        }
+        .legend-item-top .icon.speed  { background: linear-gradient(135deg, #ffca2c, #ff7b00); }
+        .legend-item-top .icon.shield { background: linear-gradient(135deg, #ffc94d, #f4d03f); }
+        .legend-item-top .icon.points { background: linear-gradient(135deg, #00cfb4, #009a85); }
+
+        .legend-item-top strong {
+            font-size: 0.78rem;
+            color: #1a3d5d;
+        }
+
+        .legend-item-bottom {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .legend-item-bottom p {
+            margin: 0;
+            font-size: 0.68rem;
+            color: #3b4d66;
+            line-height: 1.35;
+            flex: 1;
+        }
+
+        .legend-item-bottom p kbd {
+            display: inline-block;
+            padding: 0 3px;
+            background: #e8eef5;
+            border: 1px solid #c4cfd9;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 0.65rem;
+            color: #1a3d5d;
+        }
+
+        .count-badge {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            display: grid;
+            place-items: center;
+            font-size: 0.72rem;
+            font-weight: 700;
+            color: #fff;
+            flex-shrink: 0;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+        }
+        .count-badge.speed  { background: linear-gradient(135deg, #ffca2c, #ff7b00); }
+        .count-badge.shield { background: linear-gradient(135deg, #ffc94d, #f4d03f); }
+        .count-badge.points { background: linear-gradient(135deg, #00cfb4, #009a85); }
+
+        /* ── Stats card ── */
+        .stats-card {
+            background: rgba(255, 255, 255, 0.96);
+            border: 0.7px solid rgba(31, 111, 235, 0.16);
+            border-radius: 18px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.07);
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            background: rgba(31, 111, 235, 0.05);
+            border-radius: 10px;
+        }
+        .stats-row span   { color: #66788a; font-size: 0.76rem; }
+        .stats-row strong { color: #1a3d5d; font-size: 0.86rem; }
+
+        /* ── Difficulty card ── */
+        .diff-card {
+            background: rgba(255, 255, 255, 0.96);
+            border: 0.7px solid rgba(31, 111, 235, 0.16);
+            border-radius: 18px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.07);
+            padding: 12px;
+        }
+
+        .diff-card h4 {
+            margin: 0 0 8px 0;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: #66788a;
+        }
+
+        .diff-buttons {
+            display: flex;
+            gap: 6px;
+        }
+
+        .diff-btn {
+            flex: 1;
+            padding: 7px 4px;
+            border-radius: 10px;
+            border: 1.5px solid transparent;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            background: rgba(31,111,235,0.07);
+            color: #3b4d66;
+            transition: all 0.15s ease;
+        }
+        .diff-btn:hover { background: rgba(31,111,235,0.13); }
+        .diff-btn.active-easy   { background: #d3f9d8; border-color: #52b788; color: #1b4332; }
+        .diff-btn.active-normal { background: #fff3bf; border-color: #f9c74f; color: #7d4e00; }
+        .diff-btn.active-hard   { background: #ffe0e0; border-color: #e63946; color: #7a0010; }
+
+        /* ── Buttons ── */
+        .button-row {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .game-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 9px 16px;
+            background: #1f6feb;
+            color: #fff;
+            border-radius: 999px;
+            border: none;
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(31, 111, 235, 0.2);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        .game-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 12px 24px rgba(31, 111, 235, 0.28);
+        }
+        .game-button.secondary {
+            background: transparent;
+            color: #1f6feb;
+            border: 1.5px solid rgba(31, 111, 235, 0.3);
+            box-shadow: none;
+        }
+        .game-button.secondary:hover {
+            background: rgba(31, 111, 235, 0.06);
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-area">
+        <div class="game-container">
+            <canvas id="gameCanvas" width="800" height="600"></canvas>
+        </div>
+        <div class="info-column">
+            <div class="legend">
+                <h3>Power-Up-Legende</h3>
+
+                <div class="legend-item">
+                    <div class="legend-item-top">
+                        <div class="icon speed">⚡</div>
+                        <strong>Schneller werden</strong>
+                    </div>
+                    <div class="legend-item-bottom">
+                        <p>Geschwindigkeitsboost. Taste <kbd>1</kbd></p>
+                        <div class="count-badge speed" id="speedCount">0</div>
+                    </div>
+                </div>
+
+                <div class="legend-item">
+                    <div class="legend-item-top">
+                        <div class="icon shield">🛡️</div>
+                        <strong>Unverwundbar</strong>
+                    </div>
+                    <div class="legend-item-bottom">
+                        <p>Schutz vor Kollisionen. Taste <kbd>2</kbd></p>
+                        <div class="count-badge shield" id="shieldCount">0</div>
+                    </div>
+                </div>
+
+                <div class="legend-item">
+                    <div class="legend-item-top">
+                        <div class="icon points">2x</div>
+                        <strong>2x Punkte</strong>
+                    </div>
+                    <div class="legend-item-bottom">
+                        <p>Doppelte Punkte pro Passage. Taste <kbd>3</kbd></p>
+                        <div class="count-badge points" id="pointsCount">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="diff-card">
+                <h4>Schwierigkeitsgrad</h4>
+                <div class="diff-buttons">
+                    <button class="diff-btn" id="btnEasy"   onclick="setDiff('easy')">🟢 Leicht</button>
+                    <button class="diff-btn active-normal" id="btnNormal" onclick="setDiff('normal')">🟡 Normal</button>
+                    <button class="diff-btn" id="btnHard"   onclick="setDiff('hard')">🔴 Schwer</button>
+                </div>
+                <select id="diffSelect" style="display:none">
+                    <option value="easy">Leicht</option>
+                    <option value="normal" selected>Normal</option>
+                    <option value="hard">Schwer</option>
+                </select>
+            </div>
+
+            <div class="stats-card">
+                <div class="stats-row">
+                    <span>Level</span>
+                    <strong id="levelLabel" style="color:#1f6feb">1</strong>
+                </div>
+                <div style="padding:0 4px 2px;">
+                    <div style="background:rgba(31,111,235,0.1);border-radius:6px;height:8px;overflow:hidden;">
+                        <div id="levelProgressBar" style="height:100%;width:0%;background:linear-gradient(90deg,#1f6feb,#0a4f9e);border-radius:6px;transition:width 0.3s ease;"></div>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;margin-top:3px;">
+                        <span style="font-size:0.65rem;color:#66788a" id="levelProgressText">0 / 40 Punkte</span>
+                        <span style="font-size:0.65rem;color:#66788a">nächstes Level</span>
+                    </div>
+                </div>
+                <div class="stats-row">
+                    <span>Highscore</span>
+                    <strong id="highscoreLabel">0 Punkte</strong>
+                </div>
+                <div class="stats-row">
+                    <span>Münzen</span>
+                    <strong id="coinsLabel">0</strong>
+                </div>
+            </div>
+
+            <div class="button-row">
+                <button id="newPageButton" class="game-button secondary">Marktplatz</button>
+                <button id="restartButton" class="game-button">Neustart</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        function setDiff(val) {
+            document.getElementById('diffSelect').value = val;
+            document.getElementById('diffSelect').dispatchEvent(new Event('change'));
+            ['easy','normal','hard'].forEach(d => {
+                const btn = document.getElementById('btn' + d.charAt(0).toUpperCase() + d.slice(1));
+                btn.className = 'diff-btn' + (d === val ? ' active-' + d : '');
+            });
+        }
+    </script>
+    <script src="script.js"></script>
+</body>
+</html>

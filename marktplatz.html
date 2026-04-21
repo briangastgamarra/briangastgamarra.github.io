@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Marktplatz</title>
+    <link rel="stylesheet" href="market.css">
+    <style>
+        /* ── Section titles ─────────────────────────────────────────── */
+        .section-title {
+            display: flex; align-items: center; gap: 12px; margin: 8px 0 0;
+        }
+        .section-title h2 { margin:0; font-size:1.05rem; font-weight:700; color:#1a3d5d; letter-spacing:-0.01em; }
+        .section-divider  { flex:1; height:1px; background:rgba(31,111,235,0.14); }
+        .section-badge {
+            font-size:0.7rem; font-weight:700; padding:3px 9px; border-radius:999px;
+            background:linear-gradient(135deg,#1f6feb,#0a4f9e); color:#fff;
+            letter-spacing:0.04em; text-transform:uppercase;
+        }
+
+        /* ── Skin cards ──────────────────────────────────────────────── */
+        .skin-grid {
+            display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:20px;
+        }
+        .skin-card {
+            display:flex; flex-direction:column; gap:14px; padding:22px;
+            background:rgba(255,255,255,0.96); border:1.5px solid rgba(31,111,235,0.14);
+            border-radius:22px; box-shadow:0 14px 40px rgba(0,0,0,0.07);
+            transition:transform 0.15s ease,box-shadow 0.15s ease; position:relative; overflow:hidden;
+        }
+        .skin-card:hover { transform:translateY(-2px); box-shadow:0 20px 50px rgba(0,0,0,0.1); }
+        .skin-card.owned { border-color:rgba(82,183,136,0.45); background:linear-gradient(160deg,rgba(255,255,255,0.98) 0%,rgba(82,183,136,0.06) 100%); }
+        .skin-card.active-skin {
+            border-color:rgba(31,111,235,0.55);
+            background:linear-gradient(160deg,rgba(255,255,255,0.98) 0%,rgba(31,111,235,0.07) 100%);
+            box-shadow:0 0 0 3px rgba(31,111,235,0.13),0 14px 40px rgba(0,0,0,0.07);
+        }
+
+        .skin-preview {
+            width:88px; height:88px; border-radius:22px; display:grid; place-items:center;
+            box-shadow:0 10px 28px rgba(0,0,0,0.12); flex-shrink:0;
+        }
+        .skin-header   { display:flex; align-items:center; gap:14px; }
+        .skin-info     { flex:1; }
+        .skin-info h2  { margin:0 0 4px; font-size:1.2rem; color:#1a3d5d; }
+        .skin-ability  {
+            display:inline-flex; align-items:center; gap:5px; font-size:0.76rem; font-weight:600;
+            color:#fff; padding:3px 9px; border-radius:999px; margin-bottom:2px;
+        }
+        .skin-desc { margin:0; color:#3b4d66; line-height:1.55; font-size:0.88rem; }
+        .skin-meta {
+            display:flex; justify-content:space-between; align-items:center; gap:10px;
+            padding:10px 12px; background:rgba(31,111,235,0.05); border-radius:12px;
+        }
+        .skin-price strong { color:#1a3d5d; font-size:0.95rem; }
+        .skin-price span   { color:#66788a; font-size:0.78rem; display:block; }
+        .skin-actions { display:flex; gap:8px; align-items:center; }
+        .skin-btn { padding:9px 18px; border-radius:999px; border:none; font-size:0.82rem; font-weight:700; cursor:pointer; transition:all 0.15s ease; }
+        .skin-btn.buy { background:linear-gradient(135deg,#1f6feb,#0a4f9e); color:#fff; box-shadow:0 6px 16px rgba(31,111,235,0.25); }
+        .skin-btn.buy:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 10px 22px rgba(31,111,235,0.32); }
+        .skin-btn.buy:disabled { opacity:0.4; cursor:not-allowed; }
+        .skin-btn.activate { background:linear-gradient(135deg,#52b788,#1b7a50); color:#fff; box-shadow:0 6px 16px rgba(82,183,136,0.25); }
+        .skin-btn.activate:hover { transform:translateY(-1px); }
+        .skin-btn.deactivate { background:transparent; color:#1f6feb; border:1.5px solid rgba(31,111,235,0.3); }
+        .skin-btn.deactivate:hover { background:rgba(31,111,235,0.06); }
+        .active-badge {
+            display:inline-flex; align-items:center; gap:4px; font-size:0.72rem; font-weight:700;
+            color:#1f6feb; padding:3px 9px; border-radius:999px;
+            background:rgba(31,111,235,0.1); border:1px solid rgba(31,111,235,0.2);
+        }
+        .owned-badge {
+            display:inline-flex; align-items:center; gap:4px; font-size:0.72rem; font-weight:700;
+            color:#1b7a50; padding:3px 9px; border-radius:999px;
+            background:rgba(82,183,136,0.1); border:1px solid rgba(82,183,136,0.25);
+        }
+
+        /* skin preview bg gradients */
+        .skin-preview.super   { background:linear-gradient(135deg,#ff4444,#aa0000); }
+        .skin-preview.magnet  { background:linear-gradient(135deg,#4488ff,#0033aa); }
+        .skin-preview.ghost   { background:linear-gradient(135deg,#cc88ff,#7700cc); }
+        .skin-preview.lemon   { background:linear-gradient(135deg,#c8e62a,#668800); }
+        .skin-preview.robo    { background:linear-gradient(135deg,#b0bec5,#546e7a); }
+        .skin-preview.ocean   { background:linear-gradient(135deg,#00c9c9,#005f5f); }
+
+        .skin-ability.super   { background:linear-gradient(135deg,#ff4444,#aa0000); }
+        .skin-ability.magnet  { background:linear-gradient(135deg,#4488ff,#0033aa); }
+        .skin-ability.ghost   { background:linear-gradient(135deg,#cc88ff,#7700cc); }
+        .skin-ability.lemon   { background:linear-gradient(135deg,#c8e62a,#668800); }
+        .skin-ability.robo    { background:linear-gradient(135deg,#b0bec5,#546e7a); }
+        .skin-ability.ocean   { background:linear-gradient(135deg,#00c9c9,#005f5f); }
+
+        /* ── Trail cards ─────────────────────────────────────────────── */
+        .trail-grid {
+            display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px;
+        }
+        .trail-card {
+            display:flex; flex-direction:column; gap:12px; padding:18px;
+            background:rgba(255,255,255,0.96); border:1.5px solid rgba(31,111,235,0.14);
+            border-radius:20px; box-shadow:0 10px 30px rgba(0,0,0,0.06);
+            transition:transform 0.15s ease,box-shadow 0.15s ease;
+        }
+        .trail-card:hover { transform:translateY(-2px); box-shadow:0 16px 40px rgba(0,0,0,0.09); }
+        .trail-card.owned { border-color:rgba(82,183,136,0.45); }
+        .trail-card.active-trail {
+            border-color:rgba(31,111,235,0.55);
+            box-shadow:0 0 0 3px rgba(31,111,235,0.13),0 10px 30px rgba(0,0,0,0.06);
+        }
+        .trail-header { display:flex; align-items:center; gap:12px; }
+        .trail-icon {
+            width:56px; height:56px; border-radius:16px; display:grid; place-items:center;
+            font-size:1.8rem; flex-shrink:0; box-shadow:0 6px 16px rgba(0,0,0,0.12);
+        }
+        .trail-icon.rainbow { background:linear-gradient(135deg,#ff0000,#ff7700,#ffee00,#00cc44,#0088ff,#8833ff,#ff00cc); }
+        .trail-icon.fire    { background:linear-gradient(135deg,#ff7b00,#ff0000); }
+        .trail-icon.star    { background:linear-gradient(135deg,#ffe066,#ff9900); }
+        .trail-icon.cloud   { background:linear-gradient(135deg,#e0eaff,#c5d5f5); }
+
+        .trail-info h3 { margin:0 0 3px; font-size:1rem; color:#1a3d5d; }
+        .trail-info p  { margin:0; font-size:0.83rem; color:#3b4d66; line-height:1.45; }
+        .trail-meta {
+            display:flex; justify-content:space-between; align-items:center;
+            padding:8px 10px; background:rgba(31,111,235,0.05); border-radius:10px;
+        }
+        .trail-price strong { color:#1a3d5d; font-size:0.9rem; }
+        .trail-price span   { color:#66788a; font-size:0.75rem; display:block; }
+        .trail-actions { display:flex; gap:6px; align-items:center; }
+    </style>
+</head>
+<body>
+    <main class="market-page">
+        <header class="market-header">
+            <div>
+                <h1>🛒 Marktplatz</h1>
+                <p>Kaufe Power-Ups, Skins und Schweife mit deinen Münzen. Power-Ups im Spiel per Taste <kbd>1</kbd>, <kbd>2</kbd> oder <kbd>3</kbd> einsetzen.</p>
+            </div>
+            <div class="header-right">
+                <div class="coin-display">
+                    <span class="coin-icon">🪙</span>
+                    <span id="coinBalance">0</span>
+                    <span class="coin-label">Münzen</span>
+                </div>
+                <a href="index.html" class="back-link">← Zurück zum Spiel</a>
+            </div>
+        </header>
+
+        <!-- ── Power-Ups ── -->
+        <div class="section-title">
+            <h2>⚡ Power-Ups</h2>
+            <div class="section-divider"></div>
+        </div>
+        <section class="offer-grid">
+            <article class="offer-card" data-type="speed" data-price="1">
+                <div class="offer-icon speed">⚡</div>
+                <div class="offer-content">
+                    <h2>Schneller werden</h2>
+                    <p>Beschleunigt die Ente für 5 Sekunden, damit du engeren Hindernissen leichter ausweichen kannst.</p>
+                    <div class="offer-meta">
+                        <div class="offer-price-tag"><span>Preis</span><strong>1 🪙 / Stück</strong></div>
+                        <div class="inventory-hint">Im Inventar: <strong id="inv-speed">0</strong></div>
+                    </div>
+                    <div class="purchase-row">
+                        <div class="qty-control">
+                            <button class="qty-btn" data-delta="-1">−</button>
+                            <span class="qty-display" id="qty-speed">0</span>
+                            <button class="qty-btn" data-delta="1">+</button>
+                        </div>
+                        <div class="subtotal">= <strong id="sub-speed">0</strong> 🪙</div>
+                    </div>
+                </div>
+            </article>
+            <article class="offer-card" data-type="invincible" data-price="2">
+                <div class="offer-icon shield">🛡️</div>
+                <div class="offer-content">
+                    <h2>Unverwundbar</h2>
+                    <p>Schützt deine Ente für 5 Sekunden vor einem Treffer und lässt dich riskante Passagen sicher durchqueren.</p>
+                    <div class="offer-meta">
+                        <div class="offer-price-tag"><span>Preis</span><strong>2 🪙 / Stück</strong></div>
+                        <div class="inventory-hint">Im Inventar: <strong id="inv-invincible">0</strong></div>
+                    </div>
+                    <div class="purchase-row">
+                        <div class="qty-control">
+                            <button class="qty-btn" data-delta="-1">−</button>
+                            <span class="qty-display" id="qty-invincible">0</span>
+                            <button class="qty-btn" data-delta="1">+</button>
+                        </div>
+                        <div class="subtotal">= <strong id="sub-invincible">0</strong> 🪙</div>
+                    </div>
+                </div>
+            </article>
+            <article class="offer-card" data-type="doublePoints" data-price="3">
+                <div class="offer-icon points">2x</div>
+                <div class="offer-content">
+                    <h2>2x Punkte</h2>
+                    <p>Verdoppelt die gesammelten Punkte für 5 Sekunden und hilft dir, neue Highscores zu knacken.</p>
+                    <div class="offer-meta">
+                        <div class="offer-price-tag"><span>Preis</span><strong>3 🪙 / Stück</strong></div>
+                        <div class="inventory-hint">Im Inventar: <strong id="inv-doublePoints">0</strong></div>
+                    </div>
+                    <div class="purchase-row">
+                        <div class="qty-control">
+                            <button class="qty-btn" data-delta="-1">−</button>
+                            <span class="qty-display" id="qty-doublePoints">0</span>
+                            <button class="qty-btn" data-delta="1">+</button>
+                        </div>
+                        <div class="subtotal">= <strong id="sub-doublePoints">0</strong> 🪙</div>
+                    </div>
+                </div>
+            </article>
+        </section>
+
+        <!-- ── Skins ── -->
+        <div class="section-title">
+            <h2>🎨 Skins</h2>
+            <div class="section-divider"></div>
+            <span class="section-badge">Exklusiv · Permanent</span>
+        </div>
+        <section class="skin-grid" id="skinGrid"></section>
+
+        <!-- ── Schweife ── -->
+        <div class="section-title">
+            <h2>✨ Schweife</h2>
+            <div class="section-divider"></div>
+            <span class="section-badge">Kombinierbar · Permanent</span>
+        </div>
+        <section class="trail-grid" id="trailGrid"></section>
+
+        <!-- Cart bar -->
+        <div class="cart-bar" id="cartBar">
+            <div class="cart-summary"><span>Gesamtkosten:</span><strong id="totalCost">0 🪙</strong></div>
+            <div class="cart-actions">
+                <button id="resetCart" class="cart-btn secondary">Zurücksetzen</button>
+                <button id="buyBtn" class="cart-btn" disabled>Kaufen</button>
+            </div>
+            <div id="feedbackMsg" class="feedback-msg"></div>
+        </div>
+    </main>
+
+    <script>
+        // ── Constants ─────────────────────────────────────────────────────────
+        const PRICES      = { speed:1, invincible:2, doublePoints:3 };
+        const SKIN_PRICES = { super:50, magnet:60, ghost:70, lemon:45, robo:55, ocean:65 };
+        const SKIN_NAMES  = { super:'Super-Ente', magnet:'Magnet-Ente', ghost:'Geister-Ente', lemon:'Zitronen-Ente', robo:'Robo-Ente', ocean:'Ozean-Ente' };
+        const TRAIL_PRICES = { rainbow:15, fire:20, star:25, cloud:18 };
+        const TRAIL_NAMES  = { rainbow:'Regenbogenschweif', fire:'Feuerschweif', star:'Sternenschweif', cloud:'Wolkenschweif' };
+        
+        // ── Skin unlock levels ────────────────────────────────────────────────
+        const SKIN_UNLOCK_LEVELS = {
+            super:1, magnet:2, ghost:3, lemon:4, robo:5, ocean:6
+        };
+
+        // ── Storage ───────────────────────────────────────────────────────────
+        const getInventory  = () => JSON.parse(localStorage.getItem('duckInventory') || '{"speed":0,"invincible":0,"doublePoints":0}');
+        const saveInventory = v => localStorage.setItem('duckInventory', JSON.stringify(v));
+        const getCoins      = () => parseInt(localStorage.getItem('duckGameCoins')) || 0;
+        const saveCoins     = n => localStorage.setItem('duckGameCoins', n);
+        const getMaxLevel   = () => parseInt(localStorage.getItem('duckGameMaxLevel')) || 1;
+        const getOwnedSkins  = () => JSON.parse(localStorage.getItem('duckOwnedSkins')  || '[]');
+        const saveOwnedSkins = v => localStorage.setItem('duckOwnedSkins', JSON.stringify(v));
+        const getActiveSkin  = () => localStorage.getItem('duckActiveSkin')  || 'default';
+        const saveActiveSkin = v => localStorage.setItem('duckActiveSkin', v);
+        const getOwnedTrails  = () => JSON.parse(localStorage.getItem('duckOwnedTrails')  || '[]');
+        const saveOwnedTrails = v => localStorage.setItem('duckOwnedTrails', JSON.stringify(v));
+        const getActiveTrail  = () => localStorage.getItem('duckActiveTrail') || 'none';
+        const saveActiveTrail = v => localStorage.setItem('duckActiveTrail', v);
+
+        // ── Cart ──────────────────────────────────────────────────────────────
+        const cart = { speed:0, invincible:0, doublePoints:0 };
+
+        // ── Duck preview renderer ─────────────────────────────────────────────
+        function drawDuckPreview(canvasEl, style) {
+            const c = canvasEl.getContext('2d');
+            const W = canvasEl.width, H = canvasEl.height;
+            c.clearRect(0,0,W,H);
+            const ox = W/2-20, oy = H/2-20;
+            if (style==='ghost') { c.save(); c.globalAlpha=0.72; }
+            const bc = style==='super'?'#ff4444':style==='magnet'?'#4488ff':style==='ghost'?'#cc88ff':style==='lemon'?'#c8e62a':style==='robo'?'#b0bec5':style==='ocean'?'#00c9c9':'#fff1a8';
+            const bk = style==='super'?'#ff9900':style==='magnet'?'#ffcc00':style==='ghost'?'#ff99ff':style==='lemon'?'#88bb00':style==='robo'?'#78909c':style==='ocean'?'#006b6b':'#f4a261';
+            c.fillStyle=bc;
+            c.beginPath(); c.ellipse(ox+20,oy+25,18,16,0,0,Math.PI*2); c.fill();
+            c.beginPath(); c.arc(ox+20,oy+10,11,0,Math.PI*2); c.fill();
+            c.fillStyle=bk;
+            c.beginPath(); c.ellipse(ox+30,oy+10,7,4,0,0,Math.PI*2); c.fill();
+            c.fillStyle=style==='robo'?'#00e5ff':'#222';
+            c.beginPath(); c.arc(ox+23,oy+8,2.2,0,Math.PI*2); c.fill();
+            c.fillStyle='white'; c.beginPath(); c.arc(ox+24,oy+7,0.9,0,Math.PI*2); c.fill();
+            if (style==='super') { c.fillStyle='#fff'; c.font='bold 12px Arial'; c.textAlign='center'; c.fillText('S',ox+20,oy+29); c.textAlign='left'; }
+            else if (style==='magnet') {
+                c.strokeStyle='#fff'; c.lineWidth=2; c.beginPath(); c.arc(ox+20,oy+29,5,Math.PI,0); c.stroke();
+                c.strokeStyle='#ff4444'; c.lineWidth=1.5; c.beginPath(); c.moveTo(ox+15,oy+29); c.lineTo(ox+15,oy+26); c.stroke();
+                c.strokeStyle='#4444ff'; c.beginPath(); c.moveTo(ox+25,oy+29); c.lineTo(ox+25,oy+26); c.stroke();
+            } else if (style==='ghost') {
+                c.fillStyle='rgba(255,255,255,0.9)';
+                c.beginPath(); c.arc(ox+16,oy+25,2.5,0,Math.PI*2); c.fill();
+                c.beginPath(); c.arc(ox+24,oy+30,2.5,0,Math.PI*2); c.fill();
+            } else if (style==='lemon') {
+                c.fillStyle='#88bb00'; c.beginPath(); c.ellipse(ox+17,oy+0,4,7,-0.5,0,Math.PI*2); c.fill();
+            } else if (style==='robo') {
+                c.strokeStyle='rgba(0,229,255,0.5)'; c.lineWidth=1;
+                c.beginPath(); c.moveTo(ox+12,oy+20); c.lineTo(ox+28,oy+20); c.stroke();
+                c.beginPath(); c.moveTo(ox+20,oy+20); c.lineTo(ox+20,oy+36); c.stroke();
+                c.fillStyle='#00e5ff'; c.beginPath(); c.arc(ox+20,oy-4,2.5,0,Math.PI*2); c.fill();
+            } else if (style==='ocean') {
+                c.strokeStyle='rgba(255,255,255,0.5)'; c.lineWidth=1.5;
+                c.beginPath(); c.moveTo(ox+10,oy+26); c.quadraticCurveTo(ox+14,oy+22,ox+18,oy+26); c.quadraticCurveTo(ox+22,oy+30,ox+26,oy+26); c.stroke();
+            }
+            if (style==='ghost') c.restore();
+        }
+
+        // ── Skin definitions ──────────────────────────────────────────────────
+        const SKIN_DEFS = [
+            { id:'super',  icon:'super',  emoji:'🦸', name:'Super-Ente',     ability:'super',  abilityText:'⏱ Power-Ups 2× länger',              desc:'Eine rote Ente mit dem legendären "S" auf der Brust. Alle aktivierten Power-Ups halten doppelt so lange an.' },
+            { id:'magnet', icon:'magnet', emoji:'🧲', name:'Magnet-Ente',    ability:'magnet', abilityText:'🪙 Münzen-Magnet',                    desc:'Eine blaue Ente mit Magnet-Kraft. Münzen in der Nähe werden automatisch angezogen – kein Ausweichen mehr nötig.' },
+            { id:'ghost',  icon:'ghost',  emoji:'👻', name:'Geister-Ente',   ability:'ghost',  abilityText:'👻 Schneller & weniger Hindernisse',  desc:'Eine lila, halb-transparente Ente. Bewegt sich 20% schneller und Hindernisse tauchen deutlich seltener auf.' },
+            { id:'lemon',  icon:'lemon',  emoji:'🍋', name:'Zitronen-Ente',  ability:'lemon',  abilityText:'🪙 +1 Münze pro Hindernis',           desc:'Eine frische gelb-grüne Ente mit Blatt auf dem Kopf. Kassiert eine Bonus-Münze für jedes erfolgreich passierte Hindernis.' },
+            { id:'robo',   icon:'robo',   emoji:'🤖', name:'Robo-Ente',      ability:'robo',   abilityText:'🔋 Power-Up-Timer bleibt nach Tod',   desc:'Eine silberne Roboter-Ente mit Cyan-Auge und Antenne. Aktive Power-Up-Timer werden beim Tod gespeichert und beim Neustart wiederhergestellt.' },
+            { id:'ocean',  icon:'ocean',  emoji:'🌊', name:'Ozean-Ente',     ability:'ocean',  abilityText:'🌊 Hindernisse werden langsamer',     desc:'Eine türkise Ente mit Wellenmuster. Hindernisse verlangsamen sich über Zeit – je länger du überlebst, desto langsamer wird alles (bis zu 40%).' },
+        ];
+
+        // ── Trail definitions ─────────────────────────────────────────────────
+        const TRAIL_DEFS = [
+            { id:'rainbow', iconClass:'rainbow', emoji:'🌈', name:'Regenbogenschweif', desc:'Ein leuchtender Regenbogen weht vom Po der Ente bis zum linken Bildschirmrand. Wird länger, je weiter rechts du fliegst.' },
+            { id:'fire',    iconClass:'fire',    emoji:'🔥', name:'Feuerschweif',      desc:'Orangerote Flammenpartikel lodern nach hinten – wie ein Raketenantrieb für deine Ente.' },
+            { id:'star',    iconClass:'star',    emoji:'⭐', name:'Sternenschweif',    desc:'Goldene, rotierende Sternchen funkeln hinter der Ente und verblassen langsam.' },
+            { id:'cloud',   iconClass:'cloud',   emoji:'☁️', name:'Wolkenschweif',     desc:'Fluffige weiße Wölkchen quellen hervor und zerstreuen sich sanft in der Luft.' },
+        ];
+
+        // ── Build skin cards with level-locking ──────────────────────────────
+        function buildSkinGrid() {
+            const grid = document.getElementById('skinGrid');
+            grid.innerHTML = '';
+            const maxLevel = getMaxLevel();
+            
+            SKIN_DEFS.forEach(def => {
+                const unlockLevel = SKIN_UNLOCK_LEVELS[def.id];
+                const isLocked = maxLevel < unlockLevel;
+                
+                const article = document.createElement('article');
+                article.className = 'skin-card';
+                article.id = 'skinCard-' + def.id;
+                article.style.position = 'relative';
+                
+                if (isLocked) {
+                    article.style.opacity = '0.5';
+                    article.style.pointerEvents = 'none';
+                    article.style.filter = 'grayscale(0.9)';
+                }
+                
+                article.innerHTML = `
+                    <div class="skin-header">
+                        <div class="skin-preview ${def.icon}">
+                            <canvas id="preview-${def.id}" width="72" height="72"></canvas>
+                        </div>
+                        <div class="skin-info">
+                            <h2>${def.emoji} ${def.name}</h2>
+                            <span class="skin-ability ${def.ability}">${def.abilityText}</span>
+                            <p class="skin-desc">${def.desc}</p>
+                        </div>
+                    </div>
+                    <div class="skin-meta">
+                        <div class="skin-price">
+                            <span>Einmaliger Kaufpreis</span>
+                            <strong>${SKIN_PRICES[def.id]} 🪙</strong>
+                        </div>
+                        <div class="skin-actions" id="skinActions-${def.id}"></div>
+                    </div>`;
+                
+                if (isLocked) {
+                    const lockDiv = document.createElement('div');
+                    lockDiv.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;z-index:20;';
+                    lockDiv.innerHTML = `<div style="font-size:2.2rem;margin-bottom:8px;">🔒</div><div style="font-size:0.95rem;font-weight:700;">Level ${unlockLevel}</div><div style="font-size:0.8rem;opacity:0.85;">erforderlich</div>`;
+                    article.appendChild(lockDiv);
+                }
+                
+                grid.appendChild(article);
+                if (!isLocked) {
+                    drawDuckPreview(document.getElementById('preview-'+def.id), def.id);
+                }
+            });
+        }
+
+        // ── Build trail cards ─────────────────────────────────────────────────
+        function buildTrailGrid() {
+            const grid = document.getElementById('trailGrid');
+            grid.innerHTML = '';
+            TRAIL_DEFS.forEach(def => {
+                const article = document.createElement('article');
+                article.className = 'trail-card';
+                article.id = 'trailCard-' + def.id;
+                article.innerHTML = `
+                    <div class="trail-header">
+                        <div class="trail-icon ${def.iconClass}">${def.emoji}</div>
+                        <div class="trail-info">
+                            <h3>${def.name}</h3>
+                            <p>${def.desc}</p>
+                        </div>
+                    </div>
+                    <div class="trail-meta">
+                        <div class="trail-price">
+                            <span>Einmaliger Kaufpreis</span>
+                            <strong>${TRAIL_PRICES[def.id]} 🪙</strong>
+                        </div>
+                        <div class="trail-actions" id="trailActions-${def.id}"></div>
+                    </div>`;
+                grid.appendChild(article);
+            });
+        }
+
+        // ── Full render ───────────────────────────────────────────────────────
+        function render() {
+            const inv         = getInventory();
+            const coins       = getCoins();
+            const ownedSkins  = getOwnedSkins();
+            const activeSkin  = getActiveSkin();
+            const ownedTrails = getOwnedTrails();
+            const activeTrail = getActiveTrail();
+
+            document.getElementById('coinBalance').textContent = coins;
+
+            // Power-up rows
+            ['speed','invincible','doublePoints'].forEach(t => {
+                document.getElementById('inv-'+t).textContent = inv[t];
+                document.getElementById('qty-'+t).textContent = cart[t];
+                document.getElementById('sub-'+t).textContent = cart[t]*PRICES[t];
+            });
+            const total = Object.keys(cart).reduce((s,t)=>s+cart[t]*PRICES[t],0);
+            document.getElementById('totalCost').textContent = total+' 🪙';
+            const buyBtn = document.getElementById('buyBtn');
+            buyBtn.disabled = (total===0||total>coins);
+
+            // Skin cards
+            const maxLevel = getMaxLevel();
+            SKIN_DEFS.forEach(def => {
+                const card    = document.getElementById('skinCard-'+def.id);
+                const actions = document.getElementById('skinActions-'+def.id);
+                const isOwned  = ownedSkins.includes(def.id);
+                const isActive = activeSkin===def.id;
+                const unlockLevel = SKIN_UNLOCK_LEVELS[def.id];
+                const isLocked = maxLevel < unlockLevel;
+                
+                card.className = 'skin-card'+(isActive?' active-skin':isOwned?' owned':'');
+                if (isLocked) {
+                    card.style.opacity = '0.5';
+                    card.style.pointerEvents = 'none';
+                    card.style.filter = 'grayscale(0.9)';
+                }
+                
+                actions.innerHTML = '';
+                if (isLocked) {
+                    actions.appendChild(mkBadge('owned-badge','🔒 Level '+unlockLevel));
+                } else if (!isOwned) {
+                    const btn = document.createElement('button');
+                    btn.className='skin-btn buy'; btn.textContent=SKIN_PRICES[def.id]+' 🪙 Kaufen';
+                    btn.disabled=coins<SKIN_PRICES[def.id];
+                    btn.addEventListener('click',()=>buySkin(def.id));
+                    actions.appendChild(btn);
+                } else if (isActive) {
+                    actions.appendChild(mkBadge('active-badge','✓ Aktiv'));
+                    const d=document.createElement('button'); d.className='skin-btn deactivate'; d.textContent='Deaktivieren';
+                    d.addEventListener('click',()=>{saveActiveSkin('default');render();showFeedback('Standard-Ente aktiviert.','success');});
+                    actions.appendChild(d);
+                } else {
+                    actions.appendChild(mkBadge('owned-badge','✓ Besitzt'));
+                    const a=document.createElement('button'); a.className='skin-btn activate'; a.textContent='Aktivieren';
+                    a.addEventListener('click',()=>{saveActiveSkin(def.id);render();showFeedback(SKIN_NAMES[def.id]+' aktiviert! 🎉','success');});
+                    actions.appendChild(a);
+                }
+            });
+
+            // Trail cards
+            TRAIL_DEFS.forEach(def => {
+                const card    = document.getElementById('trailCard-'+def.id);
+                const actions = document.getElementById('trailActions-'+def.id);
+                const isOwned  = ownedTrails.includes(def.id);
+                const isActive = activeTrail===def.id;
+                card.className = 'trail-card'+(isActive?' active-trail':isOwned?' owned':'');
+                actions.innerHTML = '';
+                if (!isOwned) {
+                    const btn=document.createElement('button'); btn.className='skin-btn buy'; btn.textContent=TRAIL_PRICES[def.id]+' 🪙 Kaufen';
+                    btn.disabled=coins<TRAIL_PRICES[def.id];
+                    btn.addEventListener('click',()=>buyTrail(def.id));
+                    actions.appendChild(btn);
+                } else if (isActive) {
+                    actions.appendChild(mkBadge('active-badge','✓ Aktiv'));
+                    const d=document.createElement('button'); d.className='skin-btn deactivate'; d.textContent='Deaktivieren';
+                    d.addEventListener('click',()=>{saveActiveTrail('none');render();showFeedback('Schweif deaktiviert.','success');});
+                    actions.appendChild(d);
+                } else {
+                    actions.appendChild(mkBadge('owned-badge','✓ Besitzt'));
+                    const a=document.createElement('button'); a.className='skin-btn activate'; a.textContent='Aktivieren';
+                    a.addEventListener('click',()=>{saveActiveTrail(def.id);render();showFeedback(TRAIL_NAMES[def.id]+' aktiviert! ✨','success');});
+                    actions.appendChild(a);
+                }
+            });
+        }
+
+        function mkBadge(cls,txt) {
+            const s=document.createElement('span'); s.className=cls; s.textContent=txt; return s;
+        }
+
+        function buySkin(id) {
+            const maxLevel = getMaxLevel();
+            const unlockLevel = SKIN_UNLOCK_LEVELS[id];
+            if (maxLevel < unlockLevel) {
+                showFeedback('🔒 Level '+unlockLevel+' erforderlich!','error');
+                return;
+            }
+            const coins=getCoins(), price=SKIN_PRICES[id];
+            if (coins<price){showFeedback('Nicht genug Münzen!','error');return;}
+            const owned=getOwnedSkins(); if(owned.includes(id))return;
+            owned.push(id); saveOwnedSkins(owned); saveCoins(coins-price); saveActiveSkin(id);
+            render(); showFeedback(SKIN_NAMES[id]+' gekauft & aktiviert! 🎉','success');
+        }
+
+        function buyTrail(id) {
+            const coins=getCoins(), price=TRAIL_PRICES[id];
+            if (coins<price){showFeedback('Nicht genug Münzen!','error');return;}
+            const owned=getOwnedTrails(); if(owned.includes(id))return;
+            owned.push(id); saveOwnedTrails(owned); saveCoins(coins-price); saveActiveTrail(id);
+            render(); showFeedback(TRAIL_NAMES[id]+' gekauft & aktiviert! ✨','success');
+        }
+
+        // ── Power-up qty buttons ──────────────────────────────────────────────
+        document.querySelectorAll('.offer-card').forEach(card=>{
+            const type=card.dataset.type, price=parseInt(card.dataset.price);
+            card.querySelectorAll('.qty-btn').forEach(btn=>{
+                btn.addEventListener('click',()=>{
+                    const delta=parseInt(btn.dataset.delta), newQty=cart[type]+delta;
+                    if (newQty<0) return;
+                    if (delta>0) {
+                        const cur=Object.keys(cart).reduce((s,t)=>s+cart[t]*PRICES[t],0);
+                        if (cur+price>getCoins()){showFeedback('Nicht genug Münzen!','error');return;}
+                    }
+                    cart[type]=newQty; render();
+                });
+            });
+        });
+
+        document.getElementById('buyBtn').addEventListener('click',()=>{
+            const total=Object.keys(cart).reduce((s,t)=>s+cart[t]*PRICES[t],0), coins=getCoins();
+            if (total>coins) return;
+            const inv=getInventory();
+            ['speed','invincible','doublePoints'].forEach(t=>{inv[t]+=cart[t];cart[t]=0;});
+            saveInventory(inv); saveCoins(coins-total);
+            render(); showFeedback('Kauf erfolgreich! Viel Erfolg im Spiel 🎮','success');
+        });
+
+        document.getElementById('resetCart').addEventListener('click',()=>{
+            cart.speed=0;cart.invincible=0;cart.doublePoints=0; render();
+        });
+
+        let feedbackTimer=null;
+        function showFeedback(msg,type){
+            const el=document.getElementById('feedbackMsg');
+            el.textContent=msg; el.className='feedback-msg '+type;
+            clearTimeout(feedbackTimer);
+            feedbackTimer=setTimeout(()=>{el.className='feedback-msg';},3500);
+        }
+
+        // ── Init ──────────────────────────────────────────────────────────────
+        buildSkinGrid();
+        buildTrailGrid();
+        render();
+    </script>
+</body>
+</html>
